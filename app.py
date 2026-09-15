@@ -3,10 +3,10 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 from datetime import datetime, timedelta
 
-# --- 0. 카카오톡 공유 시 나오는 이름표 ---
+# --- 0. 카카오톡 공유 시 나오는 이름표 & 이모티콘 설정 ---
 st.set_page_config(
     page_title="👧 유나 등하원 스케줄러", 
-    page_icon="📅"
+    page_icon="🏫"
 )
 
 # --- 1. 구글 시트 연결 ---
@@ -19,7 +19,14 @@ def load_data():
             return pd.DataFrame(columns=['날짜', '등원', '하원', '메모'])
         
         df = df.dropna(how="all")
-        df['날짜'] = df['날짜'].astype(str)
+        
+        # 빈칸 처리 로직 개선
+        df = df.fillna("")
+        df = df.astype(str)
+        # ★ 'nan' 이나 'None'이라는 글자가 있으면 완전히 비워버리기
+        df = df.replace("nan", "") 
+        df = df.replace("None", "")
+        
         return df
     except Exception as e:
         return pd.DataFrame(columns=['날짜', '등원', '하원', '메모'])
