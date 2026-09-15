@@ -20,10 +20,9 @@ def load_data():
         
         df = df.dropna(how="all")
         
-        # 빈칸 처리 로직 개선
+        # 빈칸 처리 로직
         df = df.fillna("")
         df = df.astype(str)
-        # ★ 'nan' 이나 'None'이라는 글자가 있으면 완전히 비워버리기
         df = df.replace("nan", "") 
         df = df.replace("None", "")
         
@@ -37,12 +36,18 @@ def save_data(df):
 # --- 2. 화면 구성 시작 ---
 st.title("👧 유나 등하원 스케줄러")
 
+# ★ 수정 포인트: 한국 시간(KST)을 미리 계산
+kr_time = datetime.utcnow() + timedelta(hours=9)
+kr_date = kr_time.date() # 날짜 선택란에 넣을 용도
+today_str = kr_time.strftime("%Y-%m-%d") # 노란색 칠할 때 쓸 용도
+
 # 입력 섹션
 st.header("스케줄 입력")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    selected_date = st.date_input("날짜 선택")
+    # ★ 수정 포인트: value=kr_date 를 추가해서 한국 시간 오늘 날짜가 기본으로 뜨게 설정
+    selected_date = st.date_input("날짜 선택", value=kr_date)
 with col2:
     drop_off = st.selectbox("등원 담당", ["엄마", "아빠", "외할머니", "친할머니", "할아버지", "이모", "고모"])
 with col3:
@@ -74,10 +79,6 @@ st.header("📅 전체 스케줄 확인")
 df = load_data()
 
 if not df.empty:
-    # 한국 시간 기준 오늘 날짜 계산
-    kr_time = datetime.utcnow() + timedelta(hours=9)
-    today_str = kr_time.strftime("%Y-%m-%d")
-
     # 순수 데이터프레임 상태에서 오늘 날짜 행만 노란색 배경으로 강조
     def highlight_today(row):
         if str(row['날짜']) == today_str:
