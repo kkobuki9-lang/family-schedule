@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # --- 0. 카카오톡 공유 시 나오는 이름표 & 이모티콘 설정 ---
 st.set_page_config(
-    page_title="👧 유나 등하원 스케줄러", 
+    page_title="👧 유나 등하원 스케줄", 
     page_icon="🏫"
 )
 
@@ -34,7 +34,7 @@ def save_data(df):
     conn.update(worksheet="Sheet1", data=df)
 
 # --- 2. 화면 구성 시작 ---
-st.title("👧 유나 등하원 스케줄러")
+st.title("👧 유나 등하원 스케줄")
 
 # ★ 수정 포인트: 한국 시간(KST)을 미리 계산
 kr_time = datetime.utcnow() + timedelta(hours=9)
