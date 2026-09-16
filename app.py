@@ -26,6 +26,21 @@ def load_data():
         df = df.replace("nan", "") 
         df = df.replace("None", "")
         
+        # ★ 과거 데이터(요일 없는 형식)에 자동으로 요일을 붙여주는 호환성 코드
+        def add_weekday(date_text):
+            date_text = str(date_text).strip()
+            # 길이가 10(YYYY-MM-DD)이고 아직 괄호(요일)가 없다면 요일 추가
+            if len(date_text) == 10 and "(" not in date_text: 
+                try:
+                    d = datetime.strptime(date_text, "%Y-%m-%d").date()
+                    week_kr = ["월", "화", "수", "목", "금", "토", "일"]
+                    return f"{date_text} ({week_kr[d.weekday()]})"
+                except:
+                    return date_text
+            return date_text
+            
+        df['날짜'] = df['날짜'].apply(add_weekday)
+        
         return df
     except Exception as e:
         return pd.DataFrame(columns=['날짜', '등원', '하원', '메모'])
@@ -36,11 +51,15 @@ def save_data(df):
 # --- 2. 화면 구성 시작 ---
 st.title("👧 유나 등하원 스케줄")
 
-# 한국 시간(KST)을 미리 계산
+# 한국 시간(KST) 및 요일 계산
 kr_time = datetime.utcnow() + timedelta(hours=9)
 kr_date = kr_time.date()
-today_str = kr_time.strftime("%Y-%m-%d")
-current_month_str = kr_time.strftime("%Y-%m") # 예: '2026-09'
+week_kr = ["월", "화", "수", "목", "금", "토", "일"]
+
+today_weekday = week_kr[kr_date.weekday()]
+# 오늘 날짜를 '2026-09-16 (수)' 형태로 셋팅 (노란색 강조용)
+today_str = f"{kr_date.strftime('%Y-%m-%d')} ({today_weekday})" 
+current_month_str = kr_time.strftime("%Y-%m")
 
 # 입력 섹션
 st.header("스케줄 입력")
@@ -57,7 +76,10 @@ memo = st.text_input("메모 (예: 비 오는 날 우산 챙기기)")
 
 if st.button("저장하기"):
     df = load_data()
-    date_str = str(selected_date)
+    
+    # ★ 선택한 날짜에 요일을 붙여서 '2026-09-16 (수)' 형태로 생성
+    selected_weekday = week_kr[selected_date.weekday()]
+    date_str = f"{selected_date.strftime('%Y-%m-%d')} ({selected_weekday})"
     
     # 이미 있는 날짜면 수정, 없으면 추가
     if not df.empty and date_str in df['날짜'].values:
@@ -74,38 +96,32 @@ if st.button("저장하기"):
     st.success(f"{date_str} 스케줄이 성공적으로 저장되었습니다!")
     st.rerun()
 
-# --- 3. 확인 섹션 (월별 조회 기능 추가) ---
+# --- 3. 확인 섹션 ---
 st.header("📅 스케줄 확인")
 df = load_data()
 
 if not df.empty:
-    # '연도-월' (예: 2026-09) 형태의 숨겨진 기준 열 만들기
+    # '연도-월' (예: 2026-09) 형태의 숨겨진 기준 열 만들기 (월별 필터링용)
     df['연월'] = df['날짜'].str.slice(0, 7)
     
-    # 저장된 데이터에서 존재하는 월(Month)들만 뽑아서 내림차순(최신순) 정렬
+    # 저장된 데이터에서 존재하는 월(Month)들만 뽑아서 내림차순 정렬
     unique_months = sorted(df['연월'].unique().tolist(), reverse=True)
     
-    # 기본으로 선택될 월 설정 (이번 달 데이터가 있으면 이번 달, 없으면 가장 최신 달)
     default_index = unique_months.index(current_month_str) if current_month_str in unique_months else 0
-    
-    # 월 선택 드롭다운
     selected_month = st.selectbox("조회할 달을 선택하세요", unique_months, index=default_index)
     
     # 선택한 월의 데이터만 추려내기
     filtered_df = df[df['연월'] == selected_month].copy()
-    
-    # 화면에 보여줄 땐 '연월' 숨김 열은 삭제
     filtered_df = filtered_df.drop(columns=['연월'])
 
     if not filtered_df.empty:
-        # 오늘 날짜 노란색 강조 함수
+        # 오늘 날짜 노란색 강조 (오늘 요일까지 완벽하게 일치해야 노란색 칠해짐)
         def highlight_today(row):
             if str(row['날짜']) == today_str:
                 return ['background-color: #FFF2CC; color: #000000; font-weight: bold;'] * len(row)
             else:
                 return [''] * len(row)
 
-        # 스타일 적용하여 표 그리기
         styled_df = filtered_df.style.apply(highlight_today, axis=1)
         st.table(styled_df)
     else:
