@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # --- 0. 카카오톡 공유 시 나오는 이름표 & 이모티콘 설정 ---
 st.set_page_config(
-    page_title="👧 유나 등하원 스케줄", 
+    page_title="유나 스케줄", 
     page_icon="🏫"
 )
 
